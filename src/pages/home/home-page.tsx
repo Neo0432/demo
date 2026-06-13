@@ -11,10 +11,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { demoOrders } from "@entities/order/model/demo-orders";
-import type { DemoOrder } from "@entities/order/model/demo-orders";
-import { captchaPieces } from "@features/captcha/model/captcha-pieces";
-import { CaptchaPuzzle } from "@features/captcha/ui/captcha-puzzle";
+import { CaptchaPuzzle } from "@shared/ui/captcha-puzzle";
 import { Badge } from "@shared/ui/badge";
 import { Button } from "@shared/ui/button";
 import { DataTable } from "@shared/ui/data-table";
@@ -25,6 +22,9 @@ import { SelectField } from "@shared/ui/select-field";
 import { SwitchField } from "@shared/ui/switch-field";
 import { TextareaField } from "@shared/ui/textarea-field";
 import { PageTitle, SectionHeading, Text } from "@shared/ui/typography";
+
+import { demoOrders } from "./model/demo-orders";
+import type { DemoOrder } from "./model/demo-orders";
 
 const roleOptions = [
   { value: "admin", label: "Администратор" },
@@ -234,12 +234,12 @@ export function HomePage() {
               </Badge>
             }
           >
-            Компонент принимает 4 изображения и собирает их в квадрат.
+            Компонент принимает 4 изображения и сортирует их внутри сетки.
           </SectionHeading>
           <CaptchaPuzzle
-            pieces={captchaPieces}
             title="Соберите картинку"
-            onSolvedChange={setCaptchaSolved}
+            onSuccess={() => setCaptchaSolved(true)}
+            onFail={() => setCaptchaSolved(false)}
           />
         </section>
 

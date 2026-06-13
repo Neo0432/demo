@@ -4,13 +4,10 @@
 
 ## Структура
 
-Проект разложен по FSD:
+Проект разложен по Page-first:
 
 - `src/app/routes` - тонкие React Router routes
-- `src/pages` - страницы
-- `src/widgets` - крупные композиционные блоки
-- `src/features` - пользовательские сценарии и самостоятельные фичи
-- `src/entities` - доменные сущности
+- `src/pages` - страницы и их локальные модели
 - `src/shared` - общий UI, lib и api
 
 ## Команды
