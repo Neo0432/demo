@@ -32,7 +32,10 @@ const roleOptions = [
   { value: "student", label: "Студент" },
 ];
 
-const statusTone: Record<DemoOrder["status"], "info" | "success" | "warning" | "danger"> = {
+const statusTone: Record<
+  DemoOrder["status"],
+  "info" | "success" | "warning" | "danger"
+> = {
   blocked: "danger",
   done: "success",
   new: "info",
@@ -97,7 +100,8 @@ export function HomePage() {
       {
         accessorKey: "createdAt",
         header: "Дата",
-        cell: ({ row }) => dateFormatter.format(new Date(row.original.createdAt)),
+        cell: ({ row }) =>
+          dateFormatter.format(new Date(row.original.createdAt)),
       },
     ],
     [],
@@ -122,8 +126,8 @@ export function HomePage() {
             </>
           }
         >
-          Основа приложения: формы, таблицы, календарь, select, модалки,
-          клиент для запросов к БД и каптча из четырех фрагментов.
+          Основа приложения: формы, таблицы, календарь, select, модалки, клиент
+          для запросов к БД и каптча из четырех фрагментов.
         </PageTitle>
 
         <section className="grid gap-4 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
@@ -163,7 +167,8 @@ export function HomePage() {
 
         <section className="grid gap-4 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
           <SectionHeading title="Форма">
-            Поля ввода, textarea, react-select, переключатель и react-day-picker.
+            Поля ввода, textarea, react-select, переключатель и
+            react-day-picker.
           </SectionHeading>
           <div className="grid gap-5 lg:grid-cols-[1fr,340px]">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -245,19 +250,21 @@ export function HomePage() {
 
         <section className="grid gap-4 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
           <SectionHeading title="Запросы к базе данных">
-            Браузерный клиент лежит в shared/api/database-client.ts.
+            Пул подключений PostgreSQL лежит в app/db.ts.
           </SectionHeading>
           <Text>
-            Настройте VITE_DATABASE_URL и VITE_DATABASE_TOKEN, после этого можно
-            вызывать select, insert, update, remove из фронта.
+            Используйте pg только в серверном коде React Router: loader, action
+            или отдельном backend/API. Внутрь React-компонентов pool
+            импортировать нельзя.
           </Text>
           <pre className="overflow-x-auto rounded-lg bg-zinc-950 p-4 text-sm text-zinc-50">
-            <code>{`import { databaseClient } from "@shared/api/database-client";
+            <code>{`import { pool } from "@app/db";
 
-type User = { id: number; name: string };
+const result = await pool.query(
+  "SELECT id, name, email FROM users LIMIT 10",
+);
 
-const users = await databaseClient.select<User>("users");
-const created = await databaseClient.insert<User>("users", { name: "Demo" });`}</code>
+const users = result.rows;`}</code>
           </pre>
         </section>
       </div>

@@ -20,22 +20,24 @@ yarn build
 
 ## База данных
 
-Фронтовый клиент для прямых запросов лежит в `src/shared/api/database-client.ts`.
+Пул подключений PostgreSQL лежит в `src/app/db.ts`.
 
-Ожидаемые переменные окружения:
-
-```bash
-VITE_DATABASE_URL=https://example.com
-VITE_DATABASE_TOKEN=token
-```
-
-Пример:
+Импорт пула:
 
 ```ts
-import { databaseClient } from "@shared/api/database-client";
+import { pool } from "@app/db";
+```
 
-type User = { id: number; name: string };
+Подробная документация по работе с БД: [docs/database.md](docs/database.md).
 
-const users = await databaseClient.select<User>("users");
-const created = await databaseClient.insert<User>("users", { name: "Demo" });
+Важно: `pg` нельзя использовать внутри React-компонентов. Запросы к базе нужно писать в серверном коде React Router (`loader`/`action`) или в отдельном backend/API.
+
+Пример запроса:
+
+```ts
+const result = await pool.query(
+  "SELECT id, name, email FROM users LIMIT 10",
+);
+
+const users = result.rows;
 ```
