@@ -1,0 +1,49 @@
+@import "tailwindcss";
+@import "react-day-picker/style.css";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  background: #f6f7f8;
+  color: #18181b;
+  font-family: var(--font-sans);
+
+  @media (prefers-color-scheme: dark) {
+    color-scheme: light;
+  }
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.rdp-root {
+  --rdp-accent-color: #0f766e;
+  --rdp-accent-background-color: #ccfbf1;
+  --rdp-day_button-border-radius: 6px;
+  --rdp-selected-border: 2px solid #0f766e;
+  color: #18181b;
+}
+
+.rdp-months {
+  max-width: 100%;
+}
+
+.rdp-month {
+  width: 100%;
+}
+
+.rdp-footer {
+  color: #52525b;
+  font-size: 0.875rem;
+  padding-top: 0.75rem;
+}

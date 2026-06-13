@@ -1,87 +1,44 @@
-# Welcome to React Router!
+# Demo Exam Web Starter
 
-A modern, production-ready template for building full-stack React applications using React Router.
+Стартовая база для веб-приложения на React Router, React 19, TypeScript и Tailwind CSS.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+## Структура
 
-## Features
+Проект разложен по FSD:
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+- `src/app/routes` - тонкие React Router routes
+- `src/pages` - страницы
+- `src/widgets` - крупные композиционные блоки
+- `src/features` - пользовательские сценарии и самостоятельные фичи
+- `src/entities` - доменные сущности
+- `src/shared` - общий UI, lib и api
 
-## Getting Started
-
-### Installation
-
-Install the dependencies:
+## Команды
 
 ```bash
-npm install
+yarn dev
+yarn typecheck
+yarn build
 ```
 
-### Development
+## База данных
 
-Start the development server with HMR:
+Фронтовый клиент для прямых запросов лежит в `src/shared/api/database-client.ts`.
+
+Ожидаемые переменные окружения:
 
 ```bash
-npm run dev
+VITE_DATABASE_URL=https://example.com
+VITE_DATABASE_TOKEN=token
 ```
 
-Your application will be available at `http://localhost:5173`.
+Пример:
 
-## Building for Production
+```ts
+import { databaseClient } from "@shared/api/database-client";
 
-Create a production build:
+type User = { id: number; name: string };
 
-```bash
-npm run build
+const users = await databaseClient.select<User>("users");
+const created = await databaseClient.insert<User>("users", { name: "Demo" });
 ```
-
-## Deployment
-
-### Docker Deployment
-
-To build and run using Docker:
-
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
-
----
-
-Built with ❤️ using React Router.
