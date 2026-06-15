@@ -9,7 +9,7 @@ import {
   Send,
   Trash2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { CaptchaPuzzle } from "@shared/ui/captcha-puzzle";
 import { Badge } from "@shared/ui/badge";
@@ -76,6 +76,14 @@ export function HomePage({ users, usersError }: HomePageProps) {
   );
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [captchaSolved, setCaptchaSolved] = useState(false);
+
+  const handleCaptchaSuccess = useCallback(() => {
+    setCaptchaSolved(true);
+  }, []);
+
+  const handleCaptchaFail = useCallback(() => {
+    setCaptchaSolved(false);
+  }, []);
 
   const columns = useMemo<Array<ColumnDef<DemoOrder>>>(
     () => [
@@ -305,8 +313,8 @@ export function HomePage({ users, usersError }: HomePageProps) {
           </SectionHeading>
           <CaptchaPuzzle
             title="Соберите картинку"
-            onSuccess={() => setCaptchaSolved(true)}
-            onFail={() => setCaptchaSolved(false)}
+            onSuccess={handleCaptchaSuccess}
+            onFail={handleCaptchaFail}
           />
         </section>
 

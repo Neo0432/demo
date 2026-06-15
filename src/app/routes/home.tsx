@@ -30,9 +30,14 @@ function normalizeUserRole(role: string): DatabaseUser["role"] {
 export async function loader(): Promise<HomeLoaderData> {
   try {
     const result = await pool.query<UserRow>(`
-      SELECT id, username, role, "passwordHash"
+      SELECT
+        users.id,
+        users.username,
+        roles.name AS role,
+        users.password_hash AS "passwordHash"
       FROM users
-      ORDER BY id ASC
+      INNER JOIN roles ON roles.id = users.role_id
+      ORDER BY users.id ASC
     `);
 
     return {

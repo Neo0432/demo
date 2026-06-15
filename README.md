@@ -14,6 +14,7 @@
 
 ```bash
 yarn dev
+yarn db:init
 yarn typecheck
 yarn build
 ```
@@ -22,10 +23,20 @@ yarn build
 
 - [UI-kit](docs/ui-kit.md)
 - [Работа с базой данных](docs/database.md)
+- [PostgreSQL SQL справочник](docs/postgresql.md)
+- [Каптча](docs/captcha.md)
 
 ## База данных
 
 Пул подключений PostgreSQL лежит в `src/app/db.ts`.
+
+После запуска PostgreSQL через Docker создай таблицы и стартовые роли:
+
+```bash
+yarn db:init
+```
+
+SQL-схема лежит в `database/schema.sql`, стартовые данные - в `database/seed.sql`.
 
 Импорт пула:
 

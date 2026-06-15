@@ -1,6 +1,6 @@
 # Работа с базой данных
 
-Докер: https://github.com/FixvolvV/Compose
+Докер: https://github.com/FixvolvV/Compose.git
 
 В проект добавлена библиотека `pg` и общий пул подключений к PostgreSQL:
 
@@ -21,6 +21,138 @@ export const pool = new Pool({
   database: "postgres_db",
 });
 ```
+
+## Инициализация базы
+
+После запуска PostgreSQL через `docker-compose.yml` можно создать базу, таблицы и стартовые записи командой:
+
+```bash
+yarn db:init
+```
+
+Команда выполняет `scripts/init-db.mjs`:
+
+- подключается к PostgreSQL на `localhost:5432`
+- создает базу `postgres_db`, если ее еще нет
+- применяет `database/schema.sql`
+- применяет `database/seed.sql`
+
+По умолчанию используются те же креды, что и в `docker-compose.yml`:
+
+```txt
+POSTGRES_USER=postgres_user
+POSTGRES_PASSWORD=postgres_password
+POSTGRES_DB=postgres_db
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+```
+
+Если нужно, их можно переопределить через переменные окружения перед запуском команды.
+
+## Схема таблиц
+
+Схема лежит в `database/schema.sql`.
+
+Таблица `roles`:
+
+```sql
+CREATE TABLE IF NOT EXISTS roles (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE CHECK (name IN ('user', 'admin')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+Таблица `users`:
+
+```sql
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  role_id INTEGER NOT NULL REFERENCES roles(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+  password_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+Связь такая: `users.role_id -> roles.id`.
+
+Для фронта поле `password_hash` удобно отдавать как `passwordHash` через SQL alias:
+
+```sql
+SELECT
+  users.id,
+  users.username,
+  roles.name AS role,
+  users.password_hash AS "passwordHash"
+FROM users
+INNER JOIN roles ON roles.id = users.role_id
+ORDER BY users.id ASC;
+```
+
+## Изменение структуры и данных
+
+Для демо-проекта есть три удобных сценария.
+
+### 1. Изменить структуру без удаления данных
+
+Если нужно добавить колонку, переименовать поле, создать индекс или новую таблицу, можно написать отдельный SQL-файл миграции:
+
+```txt
+database/migrations/
+  001-init.sql
+  002-add-user-email.sql
+  003-rename-password-field.sql
+```
+
+Пример миграции:
+
+```sql
+ALTER TABLE users ADD COLUMN email TEXT;
+```
+
+Такой вариант нужен, если данные в базе хочется сохранить.
+
+### 2. Поправить или удалить записи
+
+Если структура не меняется, а нужно только обновить данные, используй обычные SQL-запросы:
+
+```sql
+UPDATE users
+SET username = 'admin'
+WHERE id = 1;
+
+DELETE FROM users
+WHERE username = 'test';
+```
+
+Для повторяемых правок можно складывать такие запросы в отдельные файлы, например:
+
+```txt
+database/fixes/
+  001-normalize-usernames.sql
+  002-delete-test-users.sql
+```
+
+### 3. Полностью пересоздать базу
+
+Если данные не важны и нужно получить чистую базу с актуальной схемой, проще снести Docker volume и создать все заново:
+
+```bash
+docker compose down -v
+docker compose up -d
+yarn db:init
+```
+
+`docker compose down -v` удаляет volume PostgreSQL вместе со всеми данными. После этого `yarn db:init` снова создаст базу, таблицы и стартовые записи из `database/schema.sql` и `database/seed.sql`.
+
+Для экзамена обычно достаточно держать:
+
+- `database/schema.sql` - актуальная структура
+- `database/seed.sql` - стартовые данные
+- `yarn db:init` - команда для подготовки базы
+
+Если структура изменилась во время разработки и данные не жалко, самый быстрый путь: обновить `schema.sql`, выполнить `docker compose down -v`, затем `docker compose up -d` и `yarn db:init`.
 
 ## Важное правило
 

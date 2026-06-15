@@ -16,7 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ArrowRight, RotateCcw } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@shared/lib/cn";
 import { Button } from "@shared/ui/button";
@@ -27,6 +27,8 @@ const defaultImages = [
   "/captcha/3.png",
   "/captcha/4.png",
 ] as const;
+
+const defaultSolutionOrder = [0, 1, 2, 3] as const;
 
 /** Один фрагмент изображения для CaptchaPuzzle. */
 export interface CaptchaPiece {
@@ -44,6 +46,8 @@ export interface CaptchaPuzzleProps {
   title?: string;
   /** Показывать ли кнопку продолжения после успешного решения. */
   hasContinueButton?: boolean;
+  /** Правильный порядок id фрагментов. По умолчанию `[0, 1, 2, 3]`. */
+  solutionOrder?: readonly number[];
   /** Вызывается один раз, когда фрагменты впервые собраны правильно. */
   onSuccess?: () => void;
   /** Вызывается, если после успешного состояния порядок снова стал неверным. */
@@ -57,26 +61,15 @@ interface SortablePieceProps {
   isSolved: boolean;
 }
 
-function shuffleArray<T>(items: T[]) {
-  if (items.length <= 1) {
-    return [...items];
-  }
+function shuffleArray<T>(items: readonly T[]) {
+  const nextItems = [...items];
 
-  let nextItems = [...items];
-  let isSameAsOriginal = true;
-
-  while (isSameAsOriginal) {
-    nextItems = [...items];
-
-    for (let index = nextItems.length - 1; index > 0; index -= 1) {
-      const randomIndex = Math.floor(Math.random() * (index + 1));
-      [nextItems[index], nextItems[randomIndex]] = [
-        nextItems[randomIndex],
-        nextItems[index],
-      ];
-    }
-
-    isSameAsOriginal = nextItems.every((item, index) => item === items[index]);
+  for (let index = nextItems.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [nextItems[index], nextItems[randomIndex]] = [
+      nextItems[randomIndex],
+      nextItems[index],
+    ];
   }
 
   return nextItems;
@@ -84,6 +77,90 @@ function shuffleArray<T>(items: T[]) {
 
 function createPieces(images: readonly string[]) {
   return images.map((src, index) => ({ id: index, src }));
+}
+
+function checkSolution(
+  pieces: CaptchaPiece[],
+  solutionOrder: readonly number[],
+) {
+  return (
+    pieces.length === solutionOrder.length &&
+    pieces.every((piece, index) => piece.id === solutionOrder[index])
+  );
+}
+
+function createSolvedPieces(
+  images: readonly string[],
+  solutionOrder: readonly number[],
+) {
+  const pieces = createPieces(images);
+  const piecesById = new Map(pieces.map((piece) => [piece.id, piece]));
+
+  if (solutionOrder.length !== pieces.length) {
+    return pieces;
+  }
+
+  const solvedPieces = solutionOrder
+    .map((id) => piecesById.get(id))
+    .filter((piece): piece is CaptchaPiece => Boolean(piece));
+
+  return solvedPieces.length === pieces.length ? solvedPieces : pieces;
+}
+
+function createFallbackUnsolvedPieces(
+  images: readonly string[],
+  solutionOrder: readonly number[],
+) {
+  const pieces = createSolvedPieces(images, solutionOrder);
+
+  if (pieces.length < 2) {
+    return pieces;
+  }
+
+  const nextPieces = [...pieces];
+
+  [nextPieces[0], nextPieces[1]] = [nextPieces[1], nextPieces[0]];
+
+  if (nextPieces.length > 3) {
+    [nextPieces[2], nextPieces[3]] = [nextPieces[3], nextPieces[2]];
+  }
+
+  return nextPieces;
+}
+
+function generateUnsolvedPieces(
+  images: readonly string[],
+  solutionOrder: readonly number[],
+  options: { randomize?: boolean } = {},
+) {
+  const basePieces = createPieces(images);
+
+  if (basePieces.length !== solutionOrder.length || basePieces.length < 2) {
+    return basePieces;
+  }
+
+  if (!options.randomize) {
+    return createFallbackUnsolvedPieces(images, solutionOrder);
+  }
+
+  let shuffledPieces = shuffleArray(basePieces);
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    if (!checkSolution(shuffledPieces, solutionOrder)) {
+      return shuffledPieces;
+    }
+
+    shuffledPieces = shuffleArray(basePieces);
+  }
+
+  return createFallbackUnsolvedPieces(images, solutionOrder);
+}
+
+function areArraysEqual<T>(left: readonly T[], right: readonly T[]) {
+  return (
+    left.length === right.length &&
+    left.every((value, index) => Object.is(value, right[index]))
+  );
 }
 
 function SortablePiece({ isSolved, piece }: SortablePieceProps) {
@@ -115,8 +192,8 @@ function SortablePiece({ isSolved, piece }: SortablePieceProps) {
         isSolved ? "cursor-default" : "cursor-grab active:cursor-grabbing",
       )}
       style={style}
-      {...attributes}
-      {...listeners}
+      {...(isSolved ? {} : attributes)}
+      {...(isSolved ? {} : listeners)}
     >
       <img
         src={piece.src}
@@ -134,16 +211,18 @@ export function CaptchaPuzzle({
   onContinue,
   onFail,
   onSuccess,
+  solutionOrder = defaultSolutionOrder,
   title = "Каптча",
 }: CaptchaPuzzleProps) {
-  const imageKey = JSON.stringify(images);
-  const imageSources = useMemo(() => [...images], [imageKey]);
-  const hasValidImages = imageSources.length === 4;
-  const previousImageKeyRef = useRef(imageKey);
+  const hasValidImages = images.length === 4;
+  const previousConfigRef = useRef({
+    images: [...images],
+    solutionOrder: [...solutionOrder],
+  });
   const [pieces, setPieces] = useState<CaptchaPiece[]>(() =>
-    shuffleArray(createPieces(imageSources)),
+    generateUnsolvedPieces(images, solutionOrder),
   );
-  const [wasSolved, setWasSolved] = useState(false);
+  const [isSolved, setIsSolved] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -154,39 +233,34 @@ export function CaptchaPuzzle({
     }),
   );
 
-  const isSolved = useMemo(
-    () =>
-      hasValidImages &&
-      pieces.length === 4 &&
-      pieces.every((piece, index) => piece.id === index),
-    [hasValidImages, pieces],
-  );
-
   useEffect(() => {
-    if (previousImageKeyRef.current === imageKey) {
+    const previousConfig = previousConfigRef.current;
+    const isSameConfig =
+      areArraysEqual(previousConfig.images, images) &&
+      areArraysEqual(previousConfig.solutionOrder, solutionOrder);
+
+    if (isSameConfig) {
       return;
     }
 
-    previousImageKeyRef.current = imageKey;
-    setPieces(shuffleArray(createPieces(imageSources)));
-    setWasSolved(false);
-  }, [imageKey, imageSources]);
+    previousConfigRef.current = {
+      images: [...images],
+      solutionOrder: [...solutionOrder],
+    };
 
-  useEffect(() => {
-    if (isSolved && !wasSolved) {
-      setWasSolved(true);
-      onSuccess?.();
-      return;
-    }
-
-    if (!isSolved && wasSolved) {
-      setWasSolved(false);
-      onFail?.();
-    }
-  }, [isSolved, onFail, onSuccess, wasSolved]);
+    setPieces(
+      generateUnsolvedPieces(images, solutionOrder, { randomize: true }),
+    );
+    setIsSolved(false);
+    onFail?.();
+  }, [images, onFail, solutionOrder]);
 
   function reset() {
-    setPieces(shuffleArray(createPieces(imageSources)));
+    setPieces(
+      generateUnsolvedPieces(images, solutionOrder, { randomize: true }),
+    );
+    setIsSolved(false);
+    onFail?.();
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -196,16 +270,22 @@ export function CaptchaPuzzle({
       return;
     }
 
-    setPieces((currentPieces) => {
-      const oldIndex = currentPieces.findIndex((piece) => piece.id === active.id);
-      const newIndex = currentPieces.findIndex((piece) => piece.id === over.id);
+    const oldIndex = pieces.findIndex((piece) => piece.id === active.id);
+    const newIndex = pieces.findIndex((piece) => piece.id === over.id);
 
-      if (oldIndex === -1 || newIndex === -1) {
-        return currentPieces;
-      }
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
 
-      return arrayMove(currentPieces, oldIndex, newIndex);
-    });
+    const nextPieces = arrayMove(pieces, oldIndex, newIndex);
+    const nextIsSolved = checkSolution(nextPieces, solutionOrder);
+
+    setPieces(nextPieces);
+
+    if (nextIsSolved) {
+      setIsSolved(true);
+      onSuccess?.();
+    }
   }
 
   if (!hasValidImages) {
@@ -227,32 +307,37 @@ export function CaptchaPuzzle({
               : "Поменяйте фрагменты местами, чтобы собрать картинку."}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={reset}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isSolved}
+          onClick={reset}
+        >
           <RotateCcw className="size-4" />
           Сбросить
         </Button>
       </div>
 
       <DndContext
-        sensors={sensors}
+        sensors={isSolved ? [] : sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext
-          items={pieces.map((piece) => piece.id)}
-          strategy={rectSortingStrategy}
+        <div
+          className={cn(
+            "grid aspect-square w-full max-w-[300px] grid-cols-2 gap-1 overflow-hidden rounded-md border-4 bg-zinc-50 transition-colors duration-300",
+            isSolved ? "border-emerald-300" : "border-zinc-600",
+          )}
         >
-          <div
-            className={cn(
-              "grid aspect-square w-full max-w-[300px] grid-cols-2 gap-1 overflow-hidden rounded-md border-4 bg-zinc-50 transition-colors duration-300",
-              isSolved ? "border-emerald-300" : "border-zinc-600",
-            )}
+          <SortableContext
+            items={pieces.map((piece) => piece.id)}
+            strategy={rectSortingStrategy}
           >
             {pieces.map((piece) => (
               <SortablePiece key={piece.id} piece={piece} isSolved={isSolved} />
             ))}
-          </div>
-        </SortableContext>
+          </SortableContext>
+        </div>
       </DndContext>
 
       {hasContinueButton && (
