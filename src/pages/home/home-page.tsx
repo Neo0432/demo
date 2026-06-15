@@ -24,6 +24,7 @@ import { SwitchField } from "@shared/ui/switch-field";
 import { TextareaField } from "@shared/ui/textarea-field";
 import { PageTitle, SectionHeading, Text } from "@shared/ui/typography";
 
+import type { DatabaseUser } from "./model/database-user";
 import { demoOrders } from "./model/demo-orders";
 import type { DemoOrder } from "./model/demo-orders";
 
@@ -62,7 +63,12 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
   year: "numeric",
 });
 
-export function HomePage() {
+interface HomePageProps {
+  users: DatabaseUser[];
+  usersError: string | null;
+}
+
+export function HomePage({ users, usersError }: HomePageProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [role, setRole] = useState("manager");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
@@ -103,6 +109,41 @@ export function HomePage() {
         header: "Дата",
         cell: ({ row }) =>
           dateFormatter.format(new Date(row.original.createdAt)),
+      },
+    ],
+    [],
+  );
+
+  const userColumns = useMemo<Array<ColumnDef<DatabaseUser>>>(
+    () => [
+      {
+        accessorKey: "id",
+        header: "ID",
+        cell: ({ row }) => (
+          <span className="font-semibold text-zinc-950">{row.original.id}</span>
+        ),
+      },
+      {
+        accessorKey: "username",
+        header: "Username",
+      },
+      {
+        accessorKey: "role",
+        header: "Role",
+        cell: ({ row }) => (
+          <Badge tone={row.original.role === "admin" ? "danger" : "neutral"}>
+            {row.original.role}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: "passwordHash",
+        header: "Password hash",
+        cell: ({ row }) => (
+          <span className="font-mono text-xs text-zinc-700">
+            {row.original.passwordHash}
+          </span>
+        ),
       },
     ],
     [],
@@ -233,6 +274,22 @@ export function HomePage() {
             TanStack Table с сортировкой по заголовкам.
           </SectionHeading>
           <DataTable columns={columns} data={demoOrders} />
+        </section>
+
+        <section className="grid gap-4 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+          <SectionHeading title="Пользователи из БД">
+            SELECT id, username, role, "passwordHash" FROM users
+          </SectionHeading>
+          {usersError && (
+            <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-800">
+              {usersError}
+            </div>
+          )}
+          <DataTable
+            columns={userColumns}
+            data={users}
+            emptyText="Пользователей нет"
+          />
         </section>
 
         <section className="grid gap-4 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">

@@ -1,5 +1,7 @@
 # Работа с базой данных
 
+Докер: https://github.com/FixvolvV/Compose
+
 В проект добавлена библиотека `pg` и общий пул подключений к PostgreSQL:
 
 ```ts
@@ -115,10 +117,10 @@ export async function action({ request }: ActionFunctionArgs) {
   const name = String(formData.get("name") ?? "");
   const email = String(formData.get("email") ?? "");
 
-  await pool.query(
-    "INSERT INTO users (name, email) VALUES ($1, $2)",
-    [name, email],
-  );
+  await pool.query("INSERT INTO users (name, email) VALUES ($1, $2)", [
+    name,
+    email,
+  ]);
 
   return redirect("/users");
 }
@@ -141,10 +143,7 @@ export default function CreateUserPage() {
 Правильно:
 
 ```ts
-await pool.query(
-  "SELECT * FROM users WHERE email = $1",
-  [email],
-);
+await pool.query("SELECT * FROM users WHERE email = $1", [email]);
 ```
 
 Неправильно:
