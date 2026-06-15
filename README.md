@@ -18,6 +18,11 @@ yarn typecheck
 yarn build
 ```
 
+## Документация
+
+- [UI-kit](docs/ui-kit.md)
+- [Работа с базой данных](docs/database.md)
+
 ## База данных
 
 Пул подключений PostgreSQL лежит в `src/app/db.ts`.
@@ -27,8 +32,6 @@ yarn build
 ```ts
 import { pool } from "@app/db";
 ```
-
-Подробная документация по работе с БД: [docs/database.md](docs/database.md).
 
 Важно: `pg` нельзя использовать внутри React-компонентов. Запросы к базе нужно писать в серверном коде React Router (`loader`/`action`) или в отдельном backend/API.
 

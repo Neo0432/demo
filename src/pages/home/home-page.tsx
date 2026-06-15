@@ -18,6 +18,7 @@ import { DataTable } from "@shared/ui/data-table";
 import { DatePicker } from "@shared/ui/date-picker";
 import { InputField } from "@shared/ui/input-field";
 import { Modal } from "@shared/ui/modal";
+import { PasswordField } from "@shared/ui/password-field";
 import { SelectField } from "@shared/ui/select-field";
 import { SwitchField } from "@shared/ui/switch-field";
 import { TextareaField } from "@shared/ui/textarea-field";
@@ -188,6 +189,10 @@ export function HomePage() {
                 type="number"
                 placeholder="15000"
                 rightAddon="RUB"
+              />
+              <PasswordField
+                label="Пароль"
+                placeholder="Введите пароль"
               />
               <SelectField
                 label="Роль"

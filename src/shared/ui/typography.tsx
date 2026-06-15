@@ -31,7 +31,9 @@ export function PageTitle({
         <h1 className="text-4xl font-bold tracking-normal text-zinc-950 md:text-5xl">
           {title}
         </h1>
-        {children && <p className="text-base leading-7 text-zinc-600">{children}</p>}
+        {children && (
+          <p className="text-base leading-7 text-zinc-600">{children}</p>
+        )}
       </div>
       {action && <div className="flex shrink-0 gap-3">{action}</div>}
     </div>
@@ -57,7 +59,9 @@ export function SectionHeading({
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="grid gap-1">
         <h2 className="text-xl font-semibold text-zinc-950">{title}</h2>
-        {children && <p className="text-sm leading-6 text-zinc-600">{children}</p>}
+        {children && (
+          <p className="text-sm leading-6 text-zinc-600">{children}</p>
+        )}
       </div>
       {action && <div className="flex shrink-0 gap-2">{action}</div>}
     </div>
@@ -70,11 +74,7 @@ export interface TextProps extends HTMLAttributes<HTMLParagraphElement> {
   children?: ReactNode;
 }
 
-export function Text({
-  children,
-  className,
-  ...props
-}: TextProps) {
+export function Text({ children, className, ...props }: TextProps) {
   return (
     <p className={cn("text-sm leading-6 text-zinc-600", className)} {...props}>
       {children}

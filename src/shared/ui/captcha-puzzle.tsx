@@ -111,7 +111,7 @@ function SortablePiece({ isSolved, piece }: SortablePieceProps) {
       disabled={isSolved}
       className={cn(
         "relative size-full overflow-hidden bg-white touch-none select-none",
-        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-teal-700",
+        "focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-teal-700",
         isSolved ? "cursor-default" : "cursor-grab active:cursor-grabbing",
       )}
       style={style}
