@@ -232,6 +232,64 @@ export default function UsersPage() {
 }
 ```
 
+## GET по кнопке через useFetcher
+
+Если GET-запрос нужен по клику без перехода страницы, используй resource route и `useFetcher`.
+
+Route:
+
+```ts
+route("resources/users", "routes/resources/users.ts");
+```
+
+Resource loader:
+
+```ts
+import { getDatabaseUsers } from "@pages/home/model/get-database-users.server";
+
+export async function loader() {
+  return {
+    users: await getDatabaseUsers(),
+    usersError: null,
+  };
+}
+```
+
+Компонент:
+
+```tsx
+import { useFetcher } from "react-router";
+
+export function UsersModalExample() {
+  const usersFetcher = useFetcher<{
+    users: DatabaseUser[];
+    usersError: string | null;
+  }>();
+
+  function openModal() {
+    setModalOpen(true);
+    usersFetcher.load("/resources/users");
+  }
+
+  return (
+    <>
+      <button type="button" onClick={openModal}>
+        Открыть пользователей
+      </button>
+
+      <Modal open={modalOpen} onOpenChange={setModalOpen} title="Пользователи">
+        {usersFetcher.state === "loading" && <p>Загрузка...</p>}
+        {usersFetcher.data && (
+          <DataTable columns={columns} data={usersFetcher.data.users} />
+        )}
+      </Modal>
+    </>
+  );
+}
+```
+
+Такой запрос остается GET-запросом к loader, но не меняет URL текущей страницы.
+
 ## Запись данных через action
 
 `action` выполняется на сервере при отправке формы или mutation-запроса. В нем удобно создавать, обновлять и удалять записи.

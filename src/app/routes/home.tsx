@@ -1,6 +1,6 @@
 import { HomePage } from "@pages/home/home-page";
 import type { DatabaseUser } from "@pages/home/model/database-user";
-import { pool } from "@app/db";
+import { getDatabaseUsers } from "@pages/home/model/get-database-users.server";
 
 import type { Route } from "./+types/home";
 
@@ -16,37 +16,10 @@ export interface HomeLoaderData {
   usersError: string | null;
 }
 
-interface UserRow {
-  id: number;
-  username: string;
-  role: string;
-  passwordHash: string;
-}
-
-function normalizeUserRole(role: string): DatabaseUser["role"] {
-  return role === "admin" ? "admin" : "user";
-}
-
 export async function loader(): Promise<HomeLoaderData> {
   try {
-    const result = await pool.query<UserRow>(`
-      SELECT
-        users.id,
-        users.username,
-        roles.name AS role,
-        users.password_hash AS "passwordHash"
-      FROM users
-      INNER JOIN roles ON roles.id = users.role_id
-      ORDER BY users.id ASC
-    `);
-
     return {
-      users: result.rows.map((user) => ({
-        id: user.id,
-        username: user.username,
-        role: normalizeUserRole(user.role),
-        passwordHash: user.passwordHash,
-      })),
+      users: await getDatabaseUsers(),
       usersError: null,
     };
   } catch (error) {

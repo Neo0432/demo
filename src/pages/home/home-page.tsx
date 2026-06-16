@@ -4,12 +4,14 @@ import {
   CheckCircle2,
   Download,
   Plus,
+  RefreshCw,
   Save,
   Search,
   Send,
   Trash2,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { useFetcher } from "react-router";
 
 import { CaptchaPuzzle } from "@shared/ui/captcha-puzzle";
 import { Badge } from "@shared/ui/badge";
@@ -68,6 +70,11 @@ interface HomePageProps {
   usersError: string | null;
 }
 
+interface UsersResourceData {
+  users: DatabaseUser[];
+  usersError: string | null;
+}
+
 export function HomePage({ users, usersError }: HomePageProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [role, setRole] = useState("manager");
@@ -76,6 +83,30 @@ export function HomePage({ users, usersError }: HomePageProps) {
   );
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [captchaSolved, setCaptchaSolved] = useState(false);
+  const usersFetcher = useFetcher<UsersResourceData>();
+
+  const modalUsers = usersFetcher.data?.users ?? [];
+  const modalUsersError = usersFetcher.data?.usersError;
+  const isModalUsersLoading = usersFetcher.state === "loading";
+
+  const loadModalUsers = useCallback(() => {
+    usersFetcher.load("/resources/users");
+  }, [usersFetcher]);
+
+  const handleModalOpenChange = useCallback(
+    (open: boolean) => {
+      setModalOpen(open);
+
+      if (open) {
+        loadModalUsers();
+      }
+    },
+    [loadModalUsers],
+  );
+
+  const openUsersModal = useCallback(() => {
+    handleModalOpenChange(true);
+  }, [handleModalOpenChange]);
 
   const handleCaptchaSuccess = useCallback(() => {
     setCaptchaSolved(true);
@@ -169,9 +200,9 @@ export function HomePage({ users, usersError }: HomePageProps) {
                 <Download className="size-4" />
                 Экспорт
               </Button>
-              <Button onClick={() => setModalOpen(true)}>
+              <Button onClick={openUsersModal}>
                 <Plus className="size-4" />
-                Создать
+                Пользователи
               </Button>
             </>
           }
@@ -340,30 +371,40 @@ const users = result.rows;`}</code>
       </div>
 
       <Modal
+        className="max-w-3xl"
         open={modalOpen}
-        onOpenChange={setModalOpen}
-        title="Новая запись"
-        description="Пример базового модального окна с формой."
+        onOpenChange={handleModalOpenChange}
+        title="Пользователи"
+        description="Данные загружаются GET-запросом при открытии окна."
         footer={
           <>
-            <Button variant="outline" onClick={() => setModalOpen(false)}>
-              Отмена
+            <Button variant="outline" onClick={() => handleModalOpenChange(false)}>
+              Закрыть
             </Button>
-            <Button onClick={() => setModalOpen(false)}>
-              <Save className="size-4" />
-              Сохранить
+            <Button isLoading={isModalUsersLoading} onClick={loadModalUsers}>
+              <RefreshCw className="size-4" />
+              Обновить
             </Button>
           </>
         }
       >
         <div className="grid gap-4">
-          <InputField label="Название" placeholder="Например, заявка клиента" />
-          <SelectField
-            label="Ответственный"
-            options={roleOptions}
-            value={role}
-            onChange={setRole}
-          />
+          {modalUsersError && (
+            <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-800">
+              {modalUsersError}
+            </div>
+          )}
+          {isModalUsersLoading && !usersFetcher.data ? (
+            <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-6 text-center text-sm font-medium text-zinc-600">
+              Загрузка пользователей...
+            </div>
+          ) : (
+            <DataTable
+              columns={userColumns}
+              data={modalUsers}
+              emptyText="Пользователей нет"
+            />
+          )}
         </div>
       </Modal>
     </main>

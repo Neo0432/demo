@@ -10,6 +10,8 @@ import { Button } from "./button";
 export interface ModalProps {
   /** Содержимое основной области модального окна. */
   children?: ReactNode;
+  /** Дополнительные классы для контейнера модального окна. */
+  className?: string;
   /** Открыто ли модальное окно. */
   open: boolean;
   /** Заголовок модального окна. */
@@ -24,6 +26,7 @@ export interface ModalProps {
 
 export function Modal({
   children,
+  className,
   description,
   footer,
   onOpenChange,
@@ -63,7 +66,8 @@ export function Modal({
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         className={cn(
-          "w-full max-w-lg rounded-lg border border-zinc-200 bg-white p-6 text-zinc-950 shadow-2xl",
+          "w-full rounded-lg border border-zinc-200 bg-white p-6 text-zinc-950 shadow-2xl",
+          className ?? "max-w-lg",
           "max-h-[calc(100vh-2rem)] overflow-y-auto",
         )}
         onMouseDown={(event) => event.stopPropagation()}
