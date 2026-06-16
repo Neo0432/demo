@@ -993,3 +993,130 @@ DELETE FROM users
 WHERE username ILIKE 'test%';
 ```
 
+## Оффтоп: расчет стоимости заказа по материалам
+
+Задача: вычислить полную стоимость заказа покупателя с учетом:
+
+- количества продукции в заказе
+- стоимости материалов
+- нормы расхода материала на одну единицу продукции
+
+Условная схема:
+
+```txt
+orders
+  id
+  customer_id
+
+order_items
+  id
+  order_id
+  product_id
+  quantity
+
+products
+  id
+  name
+
+materials
+  id
+  name
+  price
+
+product_materials
+  product_id
+  material_id
+  consumption_rate
+```
+
+`consumption_rate` - сколько материала нужно на 1 единицу продукции.
+
+Формула:
+
+```txt
+стоимость = количество продукции * норма расхода материала * цена материала
+```
+
+Итоговая стоимость материалов по конкретному заказу:
+
+```sql
+SELECT
+  orders.id AS order_id,
+  COALESCE(
+    SUM(order_items.quantity * product_materials.consumption_rate * materials.price),
+    0
+  ) AS total_order_cost
+FROM orders
+INNER JOIN order_items ON order_items.order_id = orders.id
+LEFT JOIN product_materials ON product_materials.product_id = order_items.product_id
+LEFT JOIN materials ON materials.id = product_materials.material_id
+WHERE orders.id = $1
+GROUP BY orders.id;
+```
+
+Детализация по продукции внутри заказа:
+
+```sql
+SELECT
+  orders.id AS order_id,
+  products.id AS product_id,
+  products.name AS product_name,
+  order_items.quantity,
+  COALESCE(
+    SUM(product_materials.consumption_rate * materials.price),
+    0
+  ) AS material_cost_per_one_product,
+  COALESCE(
+    order_items.quantity * SUM(product_materials.consumption_rate * materials.price),
+    0
+  ) AS total_product_cost
+FROM orders
+INNER JOIN order_items ON order_items.order_id = orders.id
+INNER JOIN products ON products.id = order_items.product_id
+LEFT JOIN product_materials ON product_materials.product_id = products.id
+LEFT JOIN materials ON materials.id = product_materials.material_id
+WHERE orders.id = $1
+GROUP BY
+  orders.id,
+  products.id,
+  products.name,
+  order_items.quantity;
+```
+
+Детализация по каждому материалу:
+
+```sql
+SELECT
+  orders.id AS order_id,
+  products.name AS product_name,
+  materials.name AS material_name,
+  order_items.quantity AS product_quantity,
+  product_materials.consumption_rate,
+  materials.price AS material_price,
+  order_items.quantity * product_materials.consumption_rate AS total_material_amount,
+  order_items.quantity * product_materials.consumption_rate * materials.price AS total_material_cost
+FROM orders
+INNER JOIN order_items ON order_items.order_id = orders.id
+INNER JOIN products ON products.id = order_items.product_id
+INNER JOIN product_materials ON product_materials.product_id = products.id
+INNER JOIN materials ON materials.id = product_materials.material_id
+WHERE orders.id = $1
+ORDER BY products.name, materials.name;
+```
+
+Итоговая стоимость всех заказов конкретного покупателя:
+
+```sql
+SELECT
+  orders.customer_id,
+  COALESCE(
+    SUM(order_items.quantity * product_materials.consumption_rate * materials.price),
+    0
+  ) AS customer_orders_total_cost
+FROM orders
+INNER JOIN order_items ON order_items.order_id = orders.id
+LEFT JOIN product_materials ON product_materials.product_id = order_items.product_id
+LEFT JOIN materials ON materials.id = product_materials.material_id
+WHERE orders.customer_id = $1
+GROUP BY orders.customer_id;
+```
